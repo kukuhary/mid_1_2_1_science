@@ -1,0 +1,15 @@
+# GitHub 100MB single file size limit
+교과서_기출/\[22개정\]*
+*이북_학생용.pdf
+
+# Temporary scratch and extraction dumps
+scratch/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.class
+
+# OS generated files
+.DS_Store
+Thumbs.db

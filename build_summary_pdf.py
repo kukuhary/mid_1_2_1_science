@@ -1,0 +1,445 @@
+import os
+import subprocess
+import fitz
+
+def build_summary_pdf():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    html_path = os.path.join(base_dir, 'summary_v1.html')
+    pdf_path = os.path.join(base_dir, '5단원_힘의_작용_핵심요약_v1.pdf')
+    chrome_path = r'C:\Program Files\Google\Chrome\Application\chrome.exe'
+
+    html_content = """<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>[2026 중간고사 대비] 중1 과학 핵심 요약: Ⅴ. 힘의 작용 (v1.0)</title>
+<style>
+  @page {
+    size: A4;
+    margin: 11mm 10mm 11mm 10mm;
+    @bottom-center {
+      content: "- " counter(page) " -";
+      font-size: 8.5pt;
+      font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+      color: #333;
+    }
+  }
+  * {
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body {
+    font-family: 'Malgun Gothic', '맑은 고딕', 'Batang', '바탕', sans-serif;
+    color: #000;
+    line-height: 1.72;
+    font-size: 9.8pt;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+  }
+
+  /* 1단 전폭 헤더 박스 */
+  .header-box {
+    border: 2px solid #000;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    text-align: center;
+    background-color: #fff;
+  }
+  .header-title {
+    font-size: 14.5pt;
+    font-weight: bold;
+    margin: 0 0 5px 0;
+    letter-spacing: -0.5px;
+  }
+  .header-info-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 4px;
+    font-size: 8.6pt;
+  }
+  .header-info-table td {
+    border: 1px solid #444;
+    padding: 3px 6px;
+    text-align: center;
+    background-color: #f7f7f7;
+  }
+  .header-info-table td.label {
+    font-weight: bold;
+    background-color: #eaeaea;
+    width: 13%;
+  }
+
+  /* 2단 레이아웃 컬럼 설정 */
+  .two-column-layout {
+    column-count: 2;
+    column-gap: 8mm;
+    column-rule: 0.8px solid #777;
+    text-align: justify;
+  }
+
+  /* 섹션 구분 바 (흑백) */
+  .section-bar {
+    font-size: 10.2pt;
+    font-weight: bold;
+    border-top: 1.5px solid #000;
+    border-bottom: 1px solid #000;
+    padding: 4px 6px;
+    margin: 10px 0 7px 0;
+    background-color: #f0f0f0;
+    break-after: avoid;
+    -webkit-column-break-after: avoid;
+  }
+
+  /* 소주제 헤더 */
+  .sub-topic {
+    font-size: 9.8pt;
+    font-weight: bold;
+    margin: 7px 0 3px 0;
+    border-left: 3px solid #000;
+    padding-left: 5px;
+    break-after: avoid;
+    -webkit-column-break-after: avoid;
+  }
+
+  /* 요약 아이템 박스 */
+  .concept-box {
+    border: 1px solid #aaa;
+    background-color: #fafafa;
+    padding: 6px 8px;
+    margin-bottom: 8px;
+    font-size: 9.2pt;
+    line-height: 1.65;
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+  }
+
+  /* 2-Depth 목차 전용 박스 */
+  .toc-box {
+    border: 1.2px solid #222;
+    background-color: #fcfcfc;
+    padding: 7px 9px;
+    margin-bottom: 10px;
+    font-size: 8.8pt;
+    line-height: 1.6;
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+  }
+  .toc-header {
+    font-weight: bold;
+    font-size: 9.4pt;
+    text-align: center;
+    border-bottom: 1px solid #666;
+    padding-bottom: 3px;
+    margin-bottom: 6px;
+    background-color: #efefef;
+    padding-top: 2px;
+  }
+  .toc-depth1 {
+    font-weight: bold;
+    color: #000;
+    margin-top: 4px;
+    margin-bottom: 1px;
+  }
+  .toc-depth2 {
+    margin-left: 8px;
+    color: #222;
+  }
+  .toc-desc {
+    color: #444;
+    margin-left: 14px;
+    font-size: 8.4pt;
+  }
+
+  /* 불릿 리스트 */
+  ul {
+    margin: 2px 0 5px 0;
+    padding-left: 16px;
+  }
+  li {
+    margin-bottom: 2px;
+  }
+
+  /* 강조 텍스트 */
+  .highlight {
+    font-weight: bold;
+    text-decoration: underline;
+  }
+  .formula {
+    font-family: 'Times New Roman', serif;
+    font-style: italic;
+    font-weight: bold;
+  }
+
+  /* 오개념 체크리스트 박스 */
+  .trap-box {
+    border: 1.5px solid #000;
+    background-color: #f4f4f4;
+    padding: 7px 9px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    font-size: 9.0pt;
+    line-height: 1.65;
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+  }
+  .trap-title {
+    font-weight: bold;
+    font-size: 9.5pt;
+    text-align: center;
+    margin-bottom: 5px;
+    border-bottom: 1px dashed #444;
+    padding-bottom: 3px;
+  }
+</style>
+</head>
+<body>
+
+  <!-- 1단 전폭 상단 헤더 -->
+  <div class="header-box">
+    <div class="header-title">[2026학년도 중간고사 대비] 중학교 1학년 과학 핵심 요약</div>
+    <table class="header-info-table">
+      <tr>
+        <td class="label">과목 및 학년</td>
+        <td>중학교 과학 1 (중1)</td>
+        <td class="label">단원 영역</td>
+        <td><b>Ⅴ. 힘의 작용 (154~193쪽)</b></td>
+        <td class="label">교과서 출처</td>
+        <td>㈜비상교육 (임태훈 외)</td>
+      </tr>
+      <tr>
+        <td class="label">표준 규격</td>
+        <td>2-Depth 직관적 본질 집약형</td>
+        <td class="label">문서 버전</td>
+        <td>v1.0 (흑백 실전 요약본)</td>
+        <td class="label">시험 대상</td>
+        <td>남서울중 및 중1 공통</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 본문 2단 조판 시작 -->
+  <div class="two-column-layout">
+
+    <!-- 2-Depth 목차 요약 박스 -->
+    <div class="toc-box">
+      <div class="toc-header">■ Ⅴ. 힘의 작용 2-Depth 핵심 집약 목차</div>
+      
+      <div class="toc-depth1">[1] 힘의 표현과 평형</div>
+      <div class="toc-depth2">• 과학에서의 힘과 표현</div>
+      <div class="toc-desc">- 물체의 모양과 운동 상태를 바꾸는 원인 (작용점·방향·크기)</div>
+      <div class="toc-depth2">• 합력과 두 힘의 평형</div>
+      <div class="toc-desc">- 합력이 0이 될 때 물체는 멈추거나 계속 직진한다</div>
+
+      <div class="toc-depth1">[2] 여러 가지 힘</div>
+      <div class="toc-depth2">• 중력과 무게·질량</div>
+      <div class="toc-desc">- 지구 중심이 당기는 힘과 변하지 않는 고유한 양</div>
+      <div class="toc-depth2">• 탄성력</div>
+      <div class="toc-desc">- 변형된 길이에 비례하여 원래대로 되돌아가려는 힘</div>
+      <div class="toc-depth2">• 마찰력</div>
+      <div class="toc-desc">- 접촉면의 거칠기와 무게가 미끄러짐을 방해한다</div>
+      <div class="toc-depth2">• 부력</div>
+      <div class="toc-desc">- 액체에 잠긴 부피만큼 물체를 위로 밀어 올린다</div>
+
+      <div class="toc-depth1">[3] 힘의 작용과 운동 상태 변화</div>
+      <div class="toc-depth2">• 알짜힘과 운동 상태</div>
+      <div class="toc-desc">- 힘이 0이면 유지되고, 힘을 받으면 상태가 변한다</div>
+      <div class="toc-depth2">• 힘의 방향과 운동 변화</div>
+      <div class="toc-desc">- 나란하면 빠르기가, 수직이면 방향이 바뀐다</div>
+      <div class="toc-depth2">• 자유 낙하 운동</div>
+      <div class="toc-desc">- 오직 중력만을 받아 속력이 일정하게 빨라진다</div>
+    </div>
+
+    <!-- [1] 힘의 표현과 평형 -->
+    <div class="section-bar">[1] 힘의 표현과 평형</div>
+
+    <div class="sub-topic">1. 과학에서의 힘과 표현 방법</div>
+    <div class="concept-box">
+      <ul>
+        <li><b>과학에서의 힘</b>: 물체의 <b>모양</b>을 변하게 하거나, <b>운동 상태(속력, 운동 방향)</b>를 변하게 하는 원인 (단위: N)</li>
+        <li><b>힘의 3요소</b>: <b>작용점, 방향, 크기</b> (셋 중 하나라도 다르면 물체에 작용하는 효과가 달라짐)</li>
+        <li><b>화살표 표현법</b>:
+          <ul>
+            <li><b>시작점</b>: 힘이 가해지는 지점(작용점)</li>
+            <li><b>머리 방향</b>: 힘이 작용하는 방향</li>
+            <li><b>화살표 길이</b>: 힘의 크기에 비례</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+
+    <div class="sub-topic">2. 나란한 두 힘의 합력과 평형</div>
+    <div class="concept-box">
+      <ul>
+        <li><b>합력(알짜힘)</b>: 한 물체에 작용하는 여러 힘과 동일한 효과를 내는 하나의 힘
+          <ul>
+            <li>같은 방향: <span class="formula">F = F₁ + F₂</span> (방향: 두 힘의 방향)</li>
+            <li>반대 방향: <span class="formula">F = F_큰 - F_작은</span> (방향: 더 큰 힘의 방향)</li>
+          </ul>
+        </li>
+        <li><b>두 힘의 평형 3대 조건</b> (반드시 한 물체에 동시 작용):
+          <ol style="margin: 2px 0 2px 18px; padding: 0;">
+            <li>두 힘의 <b>크기가 같다</b>.</li>
+            <li>두 힘의 <b>방향이 정반대</b>이다.</li>
+            <li>두 힘이 <b>동일 작용선상</b>에 있다.</li>
+          </ol>
+        </li>
+        <li><b>평형 상태의 운동</b>: 합력이 0 N이므로 물체는 <b>정지 상태를 유지</b>하거나 <b>등속 직선 운동</b>을 함.</li>
+      </ul>
+    </div>
+
+    <!-- [2] 여러 가지 힘 -->
+    <div class="section-bar">[2] 여러 가지 힘</div>
+
+    <div class="sub-topic">1. 중력과 무게·질량</div>
+    <div class="concept-box">
+      <ul>
+        <li><b>중력</b>: 지구가 물체를 지구 중심(연직 아래)으로 끌어당기는 힘 (질량에 비례)</li>
+        <li><b>무게 (N)</b>: 물체에 작용하는 중력의 크기 (장소에 따라 변함, 용수철저울 측정)
+          <ul>
+            <li>지구 표면: 질량 1 kg의 무게 ≈ <b>9.8 N</b></li>
+            <li>달 표면: 달의 중력이 지구의 1/6이므로 무게도 <b>1/6</b></li>
+          </ul>
+        </li>
+        <li><b>질량 (kg, g)</b>: 장소에 관계없이 일정한 물질의 <b>고유한 양</b> (윗접시·양팔저울 측정, 불변)</li>
+      </ul>
+    </div>
+
+    <div class="sub-topic">2. 탄성력</div>
+    <div class="concept-box">
+      <ul>
+        <li><b>복원 방향</b>: 변형된 방향의 정반대(외력의 반대 방향)</li>
+        <li><b>변형 길이 비례</b>: 탄성력의 크기는 <b>늘어나거나 줄어든 길이(변형된 길이)에 비례</b>
+          <ul>
+            <li>늘어난 길이 = 전체 길이 - 원래 길이</li>
+            <li>※ 주의: 전체 길이가 비례하는 것이 아님!</li>
+          </ul>
+        </li>
+        <li><b>생활 속 이용</b>: 볼펜 스프링, 트램펄린, 장대높이뛰기 장대, 활</li>
+      </ul>
+    </div>
+
+    <div class="sub-topic">3. 마찰력</div>
+    <div class="concept-box">
+      <ul>
+        <li><b>방해 방향</b>: 물체가 미끄러지려는 방향(운동 방향)의 정반대</li>
+        <li><b>결정 요인</b>:
+          <ol style="margin: 2px 0 2px 18px; padding: 0;">
+            <li>접촉면이 <b>거칠수록</b> 큼</li>
+            <li>물체가 <b>무거울수록(수직 누름 클수록)</b> 큼</li>
+          </ol>
+        </li>
+        <li><b>핵심 함정</b>: <b>접촉 면적의 넓이와는 무관</b>함 (도막을 눕히거나 세워도 마찰력 동일)</li>
+        <li><b>이용</b>: 크게(등산화 밑창, 스노체인) / 작게(윤활유, 스케이트 날)</li>
+      </ul>
+    </div>
+
+    <div class="sub-topic">4. 부력</div>
+    <div class="concept-box">
+      <ul>
+        <li><b>떠오르게 하는 힘</b>: 액체나 기체 속에서 물체를 위로 밀어 올리는 힘 (연직 위쪽, 중력 반대)</li>
+        <li><b>잠긴 부피 비례</b>: 물체 중 <b>액체에 잠긴 부피에만 정비례</b>
+          <ul>
+            <li>※ 주의: 완전히 잠긴 후에는 <b>깊이(수심)와 무관하게 부력 일정</b></li>
+          </ul>
+        </li>
+        <li><b>수중 무게</b>: 물속 무게 = 공기 중 실제 무게 - 부력</li>
+        <li><b>생활 속 이용</b>: 화물선·배, 잠수함, 구명조끼, 열기구, 헬륨 풍선</li>
+      </ul>
+    </div>
+
+    <!-- [3] 힘의 작용과 운동 상태 변화 -->
+    <div class="section-bar">[3] 힘의 작용과 운동 상태 변화</div>
+
+    <div class="sub-topic">1. 알짜힘과 운동 상태</div>
+    <div class="concept-box">
+      <ul>
+        <li><b>운동 상태</b>: 물체의 <b>빠르기(속력)</b>와 <b>운동 방향</b></li>
+        <li><b>알짜힘 = 0 N</b>: 운동 상태 불변 (정지 유지 / 등속 직선 운동)</li>
+        <li><b>알짜힘 ≠ 0 N</b>: 속력 또는 운동 방향이 변함</li>
+      </ul>
+    </div>
+
+    <div class="sub-topic">2. 힘의 방향에 따른 운동 상태 변화 4가지</div>
+    <div class="concept-box">
+      <ul>
+        <li><b>속력만 변하는 운동</b>: 힘이 운동 방향과 나란할 때
+          <ul>
+            <li>같은 방향: 속력 증가 (낙하하는 사과)</li>
+            <li>반대 방향: 속력 감소 (위로 던진 공)</li>
+          </ul>
+        </li>
+        <li><b>운동 방향만 변하는 운동</b>: 힘이 운동 방향과 수직일 때 (속력 일정)
+          <ul>
+            <li>예: 일정한 속력의 회전목마, 대관람차, 인공위성</li>
+          </ul>
+        </li>
+        <li><b>속력과 방향 모두 변하는 운동</b>: 힘이 비스듬할 때
+          <ul>
+            <li>예: 비스듬히 던진 공, 왕복 운동하는 그네, 바이킹</li>
+          </ul>
+        </li>
+        <li><b>속력과 방향 모두 일정한 운동</b>: 알짜힘 = 0 N일 때
+          <ul>
+            <li>예: 등속 직선 운동을 하는 공항 무빙워크</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+
+    <div class="sub-topic">3. 자유 낙하 운동과 다중 섬광 사진</div>
+    <div class="concept-box">
+      <ul>
+        <li><b>자유 낙하 운동</b>: 공기 저항이 없을 때 오직 <b>중력만 받아 아래로 떨어지는 운동</b></li>
+        <li><b>운동 특성</b>: 일정한 크기의 중력을 운동 방향으로 계속 받으므로 <b>매초 속력이 일정하게 증가</b>함</li>
+        <li><b>다중 섬광 사진 해석</b>: 같은 시간 간격(0.1초) 동안 물체가 이동한 거리가 <b>아래로 갈수록 점점 넓어짐</b></li>
+      </ul>
+    </div>
+
+    <!-- 시험 직전 5대 오개념 체크리스트 -->
+    <div class="trap-box">
+      <div class="trap-title">★ 시험 직전 체크! 중1 과학 5대 빈출 오개념 정복</div>
+      <b>1. 등속 직선 운동의 알짜힘</b>: 힘을 계속 받는 것이 아니라 알짜힘 = 0 N!<br>
+      <b>2. 마찰력과 면적</b>: 접촉 면적을 넓혀도 마찰력은 절대 변하지 않음!<br>
+      <b>3. 부력과 깊이</b>: 물에 완전히 잠긴 후에는 깊이 들어가도 부력 동일!<br>
+      <b>4. 무게 vs 질량</b>: 달에 가면 무게만 1/6로 줄고, 질량(kg)은 절대 불변!<br>
+      <b>5. 용수철 탄성력</b>: 무게에 비례하는 것은 전체 길이가 아닌 '늘어난 길이'!
+    </div>
+
+  </div>
+  <!-- 본문 2단 조판 끝 -->
+
+</body>
+</html>
+"""
+
+    with open(html_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+    print(f"[1] HTML created: {html_path} ({os.path.getsize(html_path)} bytes)")
+
+    # Execute Chrome headless to print PDF
+    cmd = [
+        chrome_path,
+        '--headless=new',
+        '--disable-gpu',
+        '--no-pdf-header-footer',
+        f'--print-to-pdf={pdf_path}',
+        html_path
+    ]
+    res = subprocess.run(cmd, capture_output=True)
+    if os.path.exists(pdf_path) and os.path.getsize(pdf_path) > 1000:
+        print(f"[2] PDF successfully generated: {pdf_path} ({os.path.getsize(pdf_path)} bytes)")
+    else:
+        print(f"[FAIL] Return code: {res.returncode}, Stderr: {res.stderr.decode('utf-8', errors='ignore')}")
+        return
+
+    # Verify with PyMuPDF
+    doc = fitz.open(pdf_path)
+    print(f"[3] PDF Page Count: {len(doc)}")
+    for i, page in enumerate(doc):
+        text = page.get_text()
+        print(f"Page {i+1}: Length {len(text)} chars, Preview: {text[:80].strip()}...")
+
+if __name__ == '__main__':
+    build_summary_pdf()
